@@ -1,0 +1,12 @@
+{
+  "only": [
+    "src"
+  ],
+  "presets": [
+    ["env", {
+      "targets": {
+        "node": "current"
+      }
+    }]
+  ]
+}
