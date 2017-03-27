@@ -1,13 +1,17 @@
-import * as sql from "sequelize";
+import { Sequelize } from "sequelize";
 
 class DevExData {
   constructor(connString) {
-    this.sequelize = new sql.Sequelize(connString);
+    this.sequelize = new Sequelize(connString, {
+      dialectOptions: {encrypt: true},
+      define: { timestamps: false }
+    });
     // select EmailLogin, GitHubUser, CorpLogin from [user] u inner join usergroup ug on ug.userid = u.userid where ug.groupid = 3
     this.user = this.sequelize.define('user', {
       userId: {
         type: Sequelize.DataTypes.INTEGER,
-        field: 'userid'
+        field: 'UserId',
+        primaryKey: true
       },
       emailLogin: {
         type: Sequelize.DataTypes.STRING,
@@ -34,17 +38,22 @@ class DevExData {
         type: Sequelize.DataTypes.INTEGER,
         field: 'GroupId'
       }
+    }, {
+      freezeTableName: true
     });
 
     this.group = this.sequelize.define('group', {
       groupId: {
         type: Sequelize.DataTypes.INTEGER,
-        field: 'GroupId'
+        field: 'GroupId',
+        primaryKey: true
       },
       name: {
         type: Sequelize.DataTypes.STRING,
         field: 'Name'
       }
+    }, {
+      freezeTableName: true
     });
 
     this.user.belongsToMany(this.group, {
@@ -52,7 +61,7 @@ class DevExData {
         model: this.usergroup,
         unique: true,
       },
-      foreignKey: 'groupId'
+      foreignKey: 'userId'
     });
 
     this.group.belongsToMany(this.user, {
@@ -60,7 +69,7 @@ class DevExData {
         model: this.usergroup,
         unique: true,
       },
-      foreignKey: 'userId'
+      foreignKey: 'groupId'
     })
   }
 }
