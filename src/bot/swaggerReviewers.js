@@ -16,6 +16,13 @@ export default function (robot) {
     })
   };
 
+  let teamMembers = robot.adapter.client.web.users.list();
+  let findUserByEmail = email => {
+    teamMembers.then(res => {
+      return _.find(res.members, membrer => membrer.profile.email === email);
+    });
+  };
+
   robot.hear(/list swagger reviewers/i, (res) => {
     swaggerReviewersQuery().then(
       (result) => {
@@ -72,7 +79,9 @@ export default function (robot) {
                 adjustedTimeout = timeout * 5; // give more time if the reviewer has been recently active
               }
               robot.brain.data.swaggerReviewerReminderId = setTimeout(() => {
-                response.reply(`${response.random(reviewers).emailLogin} is on duty and should be able to assist you shortly.`);
+                findUserByEmail(response.random(reviewers).emailLogin).then(slackUser => {
+                  response.reply(`@${slackUser.name} is on duty and should be able to assist you shortly.`);
+                });
               }, adjustedTimeout);
             }
           }
