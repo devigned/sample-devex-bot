@@ -5,6 +5,7 @@ const reviewerGroupId = 3;
 
 export default function (robot) {
   let db = new DevExData(process.env.DEVEX_CONN_STRING);
+  robot.brain.data.swaggerReviewerReminderId = null;
 
   let swaggerReviewersQuery = () => {
     return db.user.findAll({
@@ -54,6 +55,7 @@ export default function (robot) {
       // handle the message by queuing or forgetting about the reminder
       swaggerReviewersQuery().then(reviewers => {
         response.match.then(msg => {
+          if(!msg) return;
           if (_.includes(_.map(reviewers, rev => rev.emailLogin), msg.user.profile.email)) {
             // this is a reviewer, so clear reminders and remember most recent reviewer
             robot.brain.data.swaggerLastReviewerMessageTime = (new Date).getTime();
@@ -61,15 +63,18 @@ export default function (robot) {
               clearTimeout(robot.brain.data.swaggerReviewerReminderId);
             }
           } else {
-            // this is not a reviewer, so set trigger to remind a reviewer in a few mins
-            let adjustedTimeout = timeout;
-            let lastReviewerMessageTime = robot.brain.data.swaggerLastReviewerMessageTime;
-            if(lastReviewerMessageTime && (new Date).getTime() - lastReviewerMessageTime > 5 * 60 * 1000) { // less than 5 mins ago
-              adjustedTimeout = timeout * 5; // give more time if the reviewer has been recently active
+            // if we haven't queued a reminder already, queue one up
+            if(!robot.brain.data.swaggerReviewerReminderId){
+              // this is not a reviewer, so set trigger to remind a reviewer in a few mins
+              let adjustedTimeout = timeout;
+              let lastReviewerMessageTime = robot.brain.data.swaggerLastReviewerMessageTime;
+              if(lastReviewerMessageTime && (new Date).getTime() - lastReviewerMessageTime > 5 * 60 * 1000) { // less than 5 mins ago
+                adjustedTimeout = timeout * 5; // give more time if the reviewer has been recently active
+              }
+              robot.brain.data.swaggerReviewerReminderId = setTimeout(() => {
+                response.reply(`${response.random(reviewers).emailLogin} is on duty and should be able to assist you shortly.`);
+              }, adjustedTimeout);
             }
-            robot.brain.data.swaggerReviewerReminderId = setTimeout(() => {
-              response.reply(`${response.random(reviewers).emailLogin} is on duty and should be able to assist you shortly.`);
-            }, adjustedTimeout);
           }
         });
       });
