@@ -4,17 +4,21 @@ import * as chrono from "chrono-node";
 
 let timeoutIds = {};
 
-class SwaggerSlackReminders {
+class SimpleReminders {
   constructor(robot) {
     this.robot = robot;
     this.cache = [];
 
-    robot.brain.on('on', () => {
-      if (robot.brain.data.swaggerSlackReminders) {
-        this.cache = _.map(this.robot.brain.data.swaggerSlackReminders, (item) => new SwaggerSlackReminder(item));
+    this.robot.brain.on('on', () => {
+      if (this.robot.brain.data.simpleReminders) {
+        this.cache = _.map(this.robot.brain.data.simpleReminders, (item) => new SimpleReminder(item));
         console.log(`loaded ${this.cache.length} reminders`);
         this.queue();
       }
+    });
+
+    this.robot.brain.on('save', () => {
+      this.robot.brain.data.simpleReminders = this.cache;
     });
   }
 
@@ -55,7 +59,7 @@ class SwaggerSlackReminders {
   }
 }
 
-class SwaggerSlackReminder {
+class SimpleReminder {
   constructor(data) {
     this.msg_envelope = data.msg_envelope;
     this.due = data.due;
@@ -119,14 +123,14 @@ class SwaggerSlackReminder {
 
 
 export default function (robot) {
-  let slackReminders = new SwaggerSlackReminders(robot);
+  let simpleReminders = new SimpleReminders(robot);
 
   robot.respond(/show reminders$/i, (msg) => {
     let text = " ";
-    if (slackReminders.cache.length === 0) {
+    if (simpleReminders.cache.length === 0) {
       text = "You don't have any reminders yet.";
     } else {
-      for (let reminder of slackReminders.cache) {
+      for (let reminder of simpleReminders.cache) {
         text += `${reminder.action} ${reminder.formatDue()}\n`;
       }
     }
@@ -135,11 +139,11 @@ export default function (robot) {
 
   robot.respond(/delete reminder (.+)$/i, (msg) => {
     let query = msg.match[1];
-    let prevLength = slackReminders.cache.length;
+    let prevLength = simpleReminders.cache.length;
     //noinspection JSCheckFunctionSignatures
-    slackReminders.length = _.reject(slackReminders.cache, {action: query});
-    slackReminders.queue();
-    if (slackReminders.cache.length !== prevLength) msg.send(`Deleted reminder ${query}`);
+    simpleReminders.length = _.reject(simpleReminders.cache, {action: query});
+    simpleReminders.queue();
+    if (simpleReminders.cache.length !== prevLength) msg.send(`Deleted reminder ${query}`);
   });
 
   robot.respond(/remind me (in|on) (.+?) to (.*)/i, (msg) => {
@@ -157,8 +161,8 @@ export default function (robot) {
         options.due = due;
       }
     }
-    let reminder = new SwaggerSlackReminder(options);
-    slackReminders.add(reminder);
+    let reminder = new SimpleReminder(options);
+    simpleReminders.add(reminder);
     msg.send(`I'll remind you to ${action} ${reminder.formatDue()}`);
   });
 }
