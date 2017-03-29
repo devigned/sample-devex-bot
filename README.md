@@ -146,9 +146,16 @@ Where `<adapter>` is the name of your adapter without the `hubot-` prefix.
 To run on Azure AppService Linux provision the following:
 
       $ az group create -n $groupName -l westus
-      $ az appservice plan create -g $groupName -n botplan -l westus
-      $ az appservice web create -g $groupName -n $webappName --is-Linux
-      $ git remote add azure $(az appservice web source-control config-local-git \
-        -g test -n botappdj --query "url" -o tsv)
-      $ az appservice web deployment user set --user-name $yourUserName
+      $ az appservice plan create -g $groupName -n botplan -l westus --is-linux
+      $ az appservice web create -g $groupName -n $webappName
+      $ az appservice web config container update -c devigned/sallybot
+      $ az appservice web config appsettings update # (with HUBOT_SLACK_TOKEN, DEVEX_CONN_STRING and REDIS_URL)
       
+### Docker Container Build, Run and Push
+
+      $ docker build -t devigned/sallybot .
+      $ docker run -it -e HUBOT_SLACK_TOKEN=$HUBOT_SLACK_TOKEN \
+         -e DEVEX_CONN_STRING=$DEVEX_CONN_STRING -e REDIS_URL=$REDIS_URL \
+         devigned/sallybot
+      $ docker push devigned/sallybot
+      $ az appservice web config container update -c devigned/sallybot:latest

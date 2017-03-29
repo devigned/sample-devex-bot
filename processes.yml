@@ -1,13 +1,10 @@
 apps:
   - name: sallybot
-    script: npm run start
-    exec_interpreter: sh
-    args: "--adapter slack"
+    script: npm
+    args: start
     watch:
       - package.json
-        external-scripts.json
-        scripts/
-        hubot-scripts.json
-        bin/hubot
-  }]
-}
+      - external-scripts.json
+      - scripts/
+      - hubot-scripts.json
+      - bin/hubot

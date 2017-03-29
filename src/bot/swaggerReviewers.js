@@ -18,7 +18,7 @@ export default function (robot) {
 
   let teamMembers = robot.adapter.client.web.users.list();
   let findUserByEmail = email => {
-    teamMembers.then(res => {
+    return teamMembers.then(res => {
       return _.find(res.members, membrer => membrer.profile.email === email);
     });
   };
@@ -37,10 +37,6 @@ export default function (robot) {
       (fail) => {
         res.reply(fail);
       });
-  });
-
-  robot.enter(res => {
-
   });
 
   let timeout = 30 * 1000; // ms
