@@ -16,15 +16,18 @@ export default function (robot) {
     })
   };
 
-  let teamMembers = robot.adapter.client.web.users.list();
+  let teamMembers = [];
+  robot.adapter.client.web.users.list().then(members => {
+    teamMembers.push(members);
+  });
+
   let findUserByEmail = email => {
-    return teamMembers.then(res => {
-      return _.find(res.members, membrer => membrer.profile.email === email);
-    });
+    return _.find(teamMembers, member => member.profile.email === email);
   };
 
   robot.hear(/list swagger reviewers/i, (res) => {
-    swaggerReviewersQuery().then(
+    console.log("here reviewers");
+    return swaggerReviewersQuery().then(
       (result) => {
         if (result.length === 0) {
           res.reply("I didn't find any Swagger reviewers... Something must be wrong.");
@@ -39,11 +42,22 @@ export default function (robot) {
       });
   });
 
-  let timeout = 30 * 1000; // ms
+  let timeout = 15 * 60 * 1000; // ms
+
+  let willMatch = (robot, text) => {
+    return robot.listeners.some(listener => {
+      if(!listener.regex || !text) return false;
+      return text.match(listener.regex);
+    });
+  };
+
+  let notResponds = text => text.match("@sally");
 
   robot.listen(
     message => {
+      console.log("here listen");
       // is this message coming in on the channel we care about?
+      if(willMatch(robot, message.text) || notResponds(message.text)) return;
       return robot.adapter.client.web.channels.info(message.room).then(
         room => {
           if (room.channel.name === 'test-sally') {
@@ -72,7 +86,7 @@ export default function (robot) {
               let adjustedTimeout = timeout;
               let lastReviewerMessageTime = robot.brain.data.swaggerLastReviewerMessageTime;
               if(lastReviewerMessageTime && (new Date).getTime() - lastReviewerMessageTime > 5 * 60 * 1000) { // less than 5 mins ago
-                adjustedTimeout = timeout * 5; // give more time if the reviewer has been recently active
+                adjustedTimeout = timeout * 2; // give more time if the reviewer has been recently active
               }
               robot.brain.data.swaggerReviewerReminderId = setTimeout(() => {
                 findUserByEmail(response.random(reviewers).emailLogin).then(slackUser => {
